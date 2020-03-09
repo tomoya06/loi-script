@@ -13,17 +13,26 @@ const IDX_REG = /[①②③④⑤⑥]/
 const MULTI_SPELL_REG = /^[\u4e00-\u9fa5](\/[\u4e00-\u9fa5])+/;
 
 async function process() {
-  const words = await connection.query('SELECT DISTINCT 字形 FROM 表1');
+  // const words = await connection.query('SELECT DISTINCT 字形 FROM 表1');
+  const words = ['落',
+    '乌',
+    '现',
+    '呀',
+    '曾',
+    '徵',
+    '證',
+    '钻',
+  ];
   console.log(`read ${words.length} word`);
 
   const docs = [];
 
   for (let i = 0; i < words.length; i += 1) {
-    const curWord = words[i]['字形'];
+    const curWord = words[i];
+    const defines = await connection.query(`SELECT * FROM 表1 WHERE 字形='${curWord}'`);
 
     console.log(`cur process: ${curWord}`);
 
-    const defines = await connection.query(`SELECT * FROM 表1 WHERE 字形='${curWord}'`);
     const newWord = {};
 
     const define = defines[0]['音义辨析'];
@@ -37,16 +46,22 @@ async function process() {
       const mappedSubDefines = defines.slice(1).map(subDefine => {
         const _def = {};
 
-        const DEF_REG = /^((?:[\u4e00-\u9fa5](?:\/[\u4e00-\u9fa5])*)?)([①②③④⑤⑥]?)((?:\[(?:[\w（）\u4e00-\u9fa5，])+\])+)(.*)/;
-        const regResult = subDefine.match(DEF_REG);
-        _def.t = regResult[1] ? regResult[1] : defineAlias;
-        _def.rid = `${regResult[1]}${regResult[2]}`; // 原始拼音標題
-        _def.pid = `${_def.t[0]}${regResult[2]}`; // 處理後拼音標題
+        if (subDefine.startsWith('注：')) {
+          _def.t = subDefine.slice(0, '注：'.length);
+          _def.def = subDefine.slice('注：'.length);
+        } else {
+          const DEF_REG = /^((?:[\u4e00-\u9fa5](?:\/[\u4e00-\u9fa5])*)?)([①②③④⑤⑥]?)((?:\[(?:[\w（）\u4e00-\u9fa5，])+\])+)(.*)/;
+          const regResult = subDefine.match(DEF_REG);
+          _def.t = regResult[1] ? regResult[1].replace(/[：]/, '') : defineAlias;
+          _def.rid = `${regResult[1]}${regResult[2]}`; // 原始拼音標題
+          _def.pid = `${_def.t[0]}${regResult[2]}`; // 處理後拼音標題
+  
+          const numberIdx = regResult[2] ? IDX.indexOf(regResult[2]) : 0;
+          _def.nid = numberIdx; // 拼音標號，0起
+          _def.py = regResult[3];
+          _def.def = regResult[4].trim();
+        }
 
-        const numberIdx = regResult[2] ? IDX.indexOf(regResult[2]) : 0;
-        _def.nid = numberIdx; // 拼音標號，0起
-        _def.py = regResult[3];
-        _def.def = regResult[4].trim();
 
         return _def;
       })
@@ -171,5 +186,5 @@ async function process() {
     }
   }
 
-  fs.writeFileSync('output.json', JSON.stringify(docs));
+  fs.writeFileSync('output.2.json', JSON.stringify(docs));
 }
