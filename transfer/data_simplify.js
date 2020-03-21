@@ -14,7 +14,6 @@ output.forEach(item => {
       pyItem.jpys = parsedPys.map(py => py.replace(/[^a-z\s]/g, '').replace(/\s+/g, ' '))
       delete pyItem.py;
       delete pyItem.pid;
-      delete pyItem.nid;
     }
   })
   
