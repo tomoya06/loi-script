@@ -28,12 +28,13 @@ output.forEach(item => {
   if (eg) {
     delete item.eg;
     item.egs = _.flatten(eg.map(egItem => egItem.egs));
-    item.egs.forEach(egItem => {
+    item.egs.forEach((egItem, idx) => {
       if (egItem.pys.some(pyList => pyList.some(pyListItem => pyListItem.match(/\]\[/)))) {
         console.log(egItem.w);
       }
       egItem.pys = egItem.pys.map(pyList => pyList.map(_pyItem => _pyItem.replace(/[\[\]）]/g, '').replace(/（/, '=')));
       egItem.jpys = egItem.pys.map(py => py.join(' ').replace(/[^a-z\s]/g, '').replace(/\s+/g, ' '));
+      egItem.nid = idx;
     })
   }
 
